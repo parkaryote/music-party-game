@@ -1,110 +1,91 @@
-# Music Party Game (MVP)
+# Music Party Game
 
-Real-time multiplayer song guessing game using **YouTube embeds only** (YouTube Iframe Player API).
+친구들과 실시간으로 즐기는 노래 맞히기 게임입니다. 방장이 YouTube 영상 목록을 넣으면 모두에게 같은 구간이 동시에 재생되고, 제목을 가장 먼저 맞힌 사람이 점수를 얻습니다.
 
-## Stack choice
-This MVP uses **Express + Vite + Socket.IO + React + TypeScript** for the simplest robust setup:
-- Single Node server for authoritative game state + Socket.IO
-- Vite-powered React client
-- In-memory rooms/state (no DB)
+재생은 **YouTube Iframe Player API** 임베드만 사용합니다. 영상이나 음원을 내려받거나 추출하지 않습니다.
 
-## Proposed folder structure
+## 실행
 
-```txt
-src/
-  client/
-    components/YouTubePlayer.tsx
-    hooks/useSocket.ts
-    App.tsx
-    main.tsx
-    styles.css
-  server/
-    index.ts
-    youtube.ts
-  shared/
-    gameUtils.ts
-    types.ts
-    __tests__/gameUtils.test.ts
-```
-
-## Run locally
+Node.js 20 이상이 필요합니다.
 
 ```bash
 npm install
 npm run dev
 ```
 
-- Client: `http://localhost:5173`
-- Server + sockets: `http://localhost:3000`
+브라우저에서 `http://localhost:5173` 을 엽니다. 게임 서버는 `http://localhost:3000` 에서 돌고, Vite 개발 서버가 소켓 요청을 그쪽으로 넘겨줍니다. 혼자 시험해 보려면 탭을 2~3개 열어 각각 다른 닉네임으로 접속하세요.
 
-## 작업물 가지고 노는 법 (빠른 가이드)
-
-아래 순서대로 하면 바로 결과를 볼 수 있습니다.
-
-1. 프로젝트 루트에서 의존성 설치
-2. 개발 서버 실행
-3. 브라우저에서 `http://localhost:5173` 접속
-4. 탭 2~3개를 열어 멀티플레이 테스트
-
-```bash
-npm install
-npm run dev
-```
-
-### 실제 플레이 흐름
-
-1. **탭 A(호스트)**: 닉네임 입력 후 `Create room`
-2. 생성된 **Room Code** 확인
-3. **탭 B/C(플레이어)**: 같은 Room Code + 닉네임으로 `Join room`
-4. 호스트가 플레이리스트 입력 후 `Save playlist` → `Start game`
-5. 플레이어들이 정답을 추측해 Enter 제출
-6. 라운드마다 먼저 맞춘 1명이 점수 획득, 잠시 후 자동 다음 곡 진행
-
-### 안 될 때 체크
-
-- `npm install` 실패 시, 네트워크/보안 정책에서 npm 레지스트리를 차단했을 가능성이 큽니다.
-- 프록시/허용 레지스트리 설정 확인 후 다시 실행해 주세요.
-
-### Production build
+### 프로덕션
 
 ```bash
 npm run build
-npm run start
+npm start        # http://localhost:3000 (PORT 로 변경 가능)
 ```
 
-## How to use
-1. Open app, enter nickname.
-2. Create room (host) or join with room code.
-3. Host pastes playlist entries (YouTube IDs/URLs, one per line or comma-separated), sets start seconds, saves playlist.
-4. Host starts game.
-5. Players type guesses and press Enter.
-6. First correct guess each round gets point.
-7. Scoreboard auto-sorts descending.
+빌드된 서버가 클라이언트 정적 파일까지 함께 제공합니다. 클라이언트를 다른 도메인에서 띄울 때만 `CLIENT_ORIGIN=https://example.com` (쉼표로 여러 개) 을 지정하세요.
 
-## Example playlist input
+## 게임 방법
+
+1. 닉네임을 입력하고 **방 만들기** → 화면 위의 방 코드나 **초대 링크 복사** 로 친구를 부릅니다.
+2. 방장이 플레이리스트를 붙여 넣고 **플레이리스트 저장** 을 누릅니다. 인정되는 정답 목록이 방장에게만 표시됩니다.
+3. **게임 시작**. 라운드마다 영상이 가려진 채 재생되고, 제한 시간 안에 제목을 입력해 Enter 를 누릅니다.
+4. 누군가 맞히거나 시간이 끝나면 정답과 영상이 공개되고, 잠시 뒤 다음 곡으로 넘어갑니다.
+5. 모든 곡이 끝나면 우승자가 표시되고, 방장이 대기실로 돌아가 다시 시작할 수 있습니다.
+
+처음에는 브라우저 자동 재생 정책 때문에 음소거로 시작합니다. **소리 켜기** 를 한 번 누르면 그 탭에서는 계속 유지됩니다.
+
+### 플레이리스트 형식
+
+한 줄에 하나씩, YouTube 주소나 11자리 영상 ID 를 적습니다 (최대 50곡).
 
 ```txt
 https://www.youtube.com/watch?v=fJ9rUzIMcZQ
 https://youtu.be/kXYiU_JCYtU
-dQw4w9WgXcQ
+dQw4w9WgXcQ | Never Gonna Give You Up
 ```
 
-## Implemented MVP features
-- Landing: nickname + room code with create/join flows
-- Lobby: player list, host badge, playlist input, start button
-- In-game: embedded YouTube player, round indicator, guess input, feedback, scoreboard
-- Server-authoritative rooms and scoring
-- Guess normalization + matching rules with minimum length threshold
-- Guess rate limit: 1 guess / 800ms per player
-- Round locking + reveal + timed auto-advance
-- Best-effort reconnect by nickname within 2 minutes
-- Room expiration after inactivity
-- Host playback resync button
+- 정답은 영상 제목에서 자동으로 뽑습니다. `Queen – Bohemian Rhapsody (Official Video)` → `Bohemian Rhapsody`
+- 자동 추출이 마음에 들지 않으면 `주소 | 정답` 으로 직접 정합니다.
+- 제목을 가져오지 못했고 정답도 적지 않은 영상은 목록에서 빠집니다.
 
-## Limitations (intentional MVP)
-- In-memory only; restarts wipe rooms/scores.
-- Video title fetch uses YouTube oEmbed best-effort; if unavailable, falls back to video ID as answer.
-- No persistent auth/anti-cheat beyond lightweight controls.
+### 정답 판정
 
-## Legal note
-This project uses YouTube embeds via the **YouTube Iframe Player API** only. It does not download, rip, or extract audio/video from YouTube.
+대소문자, 띄어쓰기, 문장부호는 무시합니다. 다음 경우에 정답으로 인정합니다.
+
+- 정답과 같을 때 (`좋은날` = `좋은 날`)
+- 오타가 조금 있을 때 (5자 이상 1글자, 10자 이상 2글자)
+- 정답 전체에 가수 이름 정도가 덧붙었을 때 (`queen bohemian rhapsody`)
+
+제목의 일부만 적은 경우(`love` → `Love Story`)나 가수 이름만 적은 경우는 오답입니다. 입력은 0.8초에 한 번만 받습니다.
+
+## 구조
+
+```txt
+src/
+  client/            React 화면
+    App.tsx
+    components/YouTubePlayer.tsx
+    hooks/useSocket.ts
+  server/
+    index.ts         Express + Socket.IO 시작점
+    game.ts          방, 라운드, 채점 (서버가 모든 상태를 결정)
+    youtube.ts       플레이리스트 파싱, 제목 조회
+  shared/
+    gameUtils.ts     정답 추출과 판정
+    types.ts         클라이언트·서버 공용 타입
+```
+
+| 명령 | 설명 |
+| --- | --- |
+| `npm run dev` | 서버와 클라이언트 개발 모드 |
+| `npm test` | 단위 테스트와 소켓 통합 테스트 |
+| `npm run typecheck` | 타입 검사 |
+| `npm run build` | 프로덕션 빌드 |
+
+## 알아둘 점
+
+- 방과 점수는 서버 메모리에만 있습니다. 서버를 재시작하면 사라집니다.
+- 새로고침하거나 연결이 끊겨도 2분 안에 돌아오면 자리와 점수가 유지됩니다.
+- 방장이 나가면 접속 중인 다른 사람에게 방장이 넘어갑니다.
+- 재생 중인 영상 ID 는 브라우저에 전달되므로, 개발자 도구를 여는 수준의 부정행위까지 막지는 못합니다.
+- 외부 재생이 막힌 영상은 재생되지 않습니다. 방장이 **이 곡 건너뛰기** 로 넘기면 됩니다.
